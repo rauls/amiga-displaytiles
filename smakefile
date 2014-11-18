@@ -1,0 +1,84 @@
+MODNAME	          = dt
+VERSION		  = 1
+
+REMOTE		  = V$(VERSION)dt
+
+LD_FILE	          = $(MODNAME)
+LD_STRIP          = $(MODNAME).strip
+
+C_COMPILER        = SC
+C_COMPILER_OPTS   = DATA=FAR PARM=STACK UCHAR
+
+LINKER            = Slink
+LINKER_OPTS	  = PLAIN SWIDTH 16
+LINKER_OPTS_STRIP = ND
+
+C_SOURCES   = dt_gad.c dt_main.c
+ASM_SOURCES =
+OBJECTS     = dt_gad.o dt_main.o
+
+STARTUP	    = LIB:c.o
+LIBS	    = LIB:sc.lib LIB:amiga.lib
+
+
+
+
+##############################################################################
+# Build the stripped load file...
+#
+#$(LD_STRIP):	$(LD_FILE)
+#		$(LINKER) FROM $(LD_FILE) TO $(LD_STRIP) $(LINKER_OPTS_STRIP)
+
+
+
+##############################################################################
+# Build the load file...
+#
+$(LD_FILE):	$(OBJECTS) $(LIBS)
+		$(LINKER) <with <
+FROM $(STARTUP) $(OBJECTS) TO $(LD_FILE) LIB $(LIBS) $(LINKER_OPTS)
+<
+		BumpRev $(VERSION) $(MODNAME)_rev
+
+
+##############################################################################
+# Default rules...
+#
+.c.o:
+	$(C_COMPILER) NOLINK $(C_COMPILER_OPTS) $*.c
+
+.asm.o:
+	$(ASSEMBLER) $*.asm
+
+
+##############################################################################
+# All dependencies...
+#
+dt_gad.o:	dt_gad.c dt_gad.h
+dt_main.o:	dt_main.c $(MODNAME)_rev.h dt_gad.h dt_globals.h
+
+
+##############################################################################
+# Bump the version...
+#
+version:
+	@BumpRev $(VERSION) $(MODNAME)_rev
+
+
+
+
+
+##############################################################################
+# Delete all object files
+#
+clean:
+	@Delete \#?.(o|ld|strip|map)
+
+
+##############################################################################
+# Release the current build to the server...
+#
+internal:
+	@Delete $(REMOTE)/((\#?.(c|h|asm|i|ld|rev|doc|library))|lmkfile)
+	@Protect ((\#?.(c|h|asm|i|ld|rev|doc))|lmkfile|$(LD_STRIP)) +rd quiet
+	@Copy \#?.(strip|ld|doc|library) \#?_rev.\#? $(REMOTE)
